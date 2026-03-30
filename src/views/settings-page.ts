@@ -33,8 +33,8 @@ function gmailCard(connected: boolean, oauthConfigured: boolean): string {
 
     <details ${oauthConfigured ? "" : "open"}>
       <summary style="cursor:pointer;color:#60a5fa;font-size:0.85rem;margin-bottom:0.75rem">${oauthConfigured ? "OAuth app configured — click to update" : "Step 1: Configure OAuth app"}</summary>
-      <input type="text" id="gmail-client-id" placeholder="Client ID" />
-      <input type="password" id="gmail-client-secret" placeholder="Client Secret" />
+      <input type="text" id="gmail-client-id" placeholder="Client ID" autocomplete="off" />
+      <input type="text" id="gmail-client-secret" placeholder="Client Secret" autocomplete="off" />
       <div class="actions">
         <button class="btn-primary" onclick="saveOAuthConfig('gmail')">Save OAuth Config</button>
       </div>
@@ -98,7 +98,10 @@ export function settingsPage({ services, oauthConfigured = {} }: SettingsPagePro
       async function saveOAuthConfig(service) {
         const clientId = document.getElementById(service + '-client-id').value;
         const clientSecret = document.getElementById(service + '-client-secret').value;
-        if (!clientId || !clientSecret) return;
+        if (!clientId || !clientSecret) {
+          document.getElementById(service + '-config-status').textContent = 'Please enter both Client ID and Client Secret';
+          return;
+        }
         const el = document.getElementById(service + '-config-status');
         el.textContent = 'Saving...';
         try {
