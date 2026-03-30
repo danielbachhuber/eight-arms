@@ -12,32 +12,33 @@ describe("oauth-providers", () => {
     vi.stubEnv("OAUTH_REDIRECT_BASE", "http://localhost:3000");
   });
 
-  it("returns Gmail provider config", () => {
-    const provider = getProvider("gmail");
+  it("returns Gmail provider config", async () => {
+    const provider = await getProvider("gmail");
     expect(provider.clientId).toBe("gmail-id");
     expect(provider.authUrl).toContain("google");
     expect(provider.scopes).toContain("https://www.googleapis.com/auth/gmail.modify");
     expect(provider.redirectUri).toBe("http://localhost:3000/api/settings/oauth/gmail/callback");
   });
 
-  it("returns GitHub provider config", () => {
-    const provider = getProvider("github");
+  it("returns GitHub provider config", async () => {
+    const provider = await getProvider("github");
     expect(provider.clientId).toBe("github-id");
     expect(provider.authUrl).toContain("github");
     expect(provider.scopes).toContain("repo");
   });
 
-  it("returns Todoist provider config", () => {
-    const provider = getProvider("todoist");
+  it("returns Todoist provider config", async () => {
+    const provider = await getProvider("todoist");
     expect(provider.clientId).toBe("todoist-id");
     expect(provider.authUrl).toContain("todoist");
     expect(provider.scopes).toContain("data:read_write");
   });
 
-  it("throws when env var is missing", () => {
+  it("throws when env var is missing and no DB config", async () => {
     vi.unstubAllEnvs();
     delete process.env.GMAIL_CLIENT_ID;
-    expect(() => getProvider("gmail")).toThrow("Missing environment variable: GMAIL_CLIENT_ID");
+    delete process.env.GMAIL_CLIENT_SECRET;
+    await expect(getProvider("gmail")).rejects.toThrow("No OAuth app config for gmail");
   });
 
   it("exports all service names", () => {

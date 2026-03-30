@@ -2,9 +2,10 @@ import { layout } from "./layout.js";
 
 interface SettingsPageProps {
   services: Record<string, boolean>;
+  oauthConfigured?: Record<string, boolean>;
 }
 
-function serviceCard(
+function tokenCard(
   name: string,
   label: string,
   connected: boolean,
@@ -24,9 +25,38 @@ function serviceCard(
   </div>`;
 }
 
-export function settingsPage({ services }: SettingsPageProps): string {
+function gmailCard(connected: boolean, oauthConfigured: boolean): string {
+  return `
+  <div class="card">
+    <h2>Gmail <span class="badge ${connected ? "ok" : "off"}">${connected ? "Connected" : "Not connected"}</span></h2>
+    <p class="hint">Gmail uses OAuth2. First configure your <a href="https://console.cloud.google.com/apis/credentials">Google Cloud OAuth app</a>, then connect.</p>
+
+    <details ${oauthConfigured ? "" : "open"}>
+      <summary style="cursor:pointer;color:#60a5fa;font-size:0.85rem;margin-bottom:0.75rem">${oauthConfigured ? "OAuth app configured — click to update" : "Step 1: Configure OAuth app"}</summary>
+      <input type="text" id="gmail-client-id" placeholder="Client ID" />
+      <input type="password" id="gmail-client-secret" placeholder="Client Secret" />
+      <div class="actions">
+        <button class="btn-primary" onclick="saveOAuthConfig('gmail')">Save OAuth Config</button>
+      </div>
+      <div class="status" id="gmail-config-status"></div>
+    </details>
+
+    ${oauthConfigured && !connected ? `
+    <div style="margin-top:0.75rem">
+      <button class="btn-primary" onclick="startOAuth('gmail')">Connect Gmail</button>
+      <div class="status" id="gmail-oauth-status"></div>
+    </div>` : ""}
+
+    ${connected ? `
+    <div style="margin-top:0.5rem">
+      <button class="btn-danger" onclick="disconnect('gmail')">Disconnect</button>
+    </div>` : ""}
+  </div>`;
+}
+
+export function settingsPage({ services, oauthConfigured = {} }: SettingsPageProps): string {
   const body = `
-    ${serviceCard(
+    ${tokenCard(
       "github",
       "GitHub",
       services.github,
@@ -34,7 +64,7 @@ export function settingsPage({ services }: SettingsPageProps): string {
       "ghp_xxxxxxxxxxxx"
     )}
 
-    ${serviceCard(
+    ${tokenCard(
       "todoist",
       "Todoist",
       services.todoist,
@@ -42,10 +72,7 @@ export function settingsPage({ services }: SettingsPageProps): string {
       "Todoist API token"
     )}
 
-    <div class="card">
-      <h2>Gmail <span class="badge ${services.gmail ? "ok" : "off"}">${services.gmail ? "Connected" : "Not connected"}</span></h2>
-      <p class="hint">Gmail requires OAuth. Not yet set up.</p>
-    </div>
+    ${gmailCard(services.gmail, !!oauthConfigured.gmail)}
 
     <button class="btn-success" onclick="triggerSync()" style="margin-top:0.5rem">Sync Now</button>
     <div class="status" id="sync-status"></div>
@@ -68,13 +95,41 @@ export function settingsPage({ services }: SettingsPageProps): string {
         } catch (e) { el.textContent = 'Error: ' + e.message; }
       }
 
+      async function saveOAuthConfig(service) {
+        const clientId = document.getElementById(service + '-client-id').value;
+        const clientSecret = document.getElementById(service + '-client-secret').value;
+        if (!clientId || !clientSecret) return;
+        const el = document.getElementById(service + '-config-status');
+        el.textContent = 'Saving...';
+        try {
+          const res = await fetch('/api/settings/oauth-config/' + service, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId, clientSecret }),
+          });
+          const data = await res.json();
+          if (data.ok) { el.textContent = 'Saved!'; setTimeout(() => location.reload(), 500); }
+          else { el.textContent = 'Error: ' + (data.error || 'Unknown'); }
+        } catch (e) { el.textContent = 'Error: ' + e.message; }
+      }
+
+      async function startOAuth(service) {
+        const el = document.getElementById(service + '-oauth-status');
+        el.textContent = 'Starting OAuth...';
+        try {
+          const res = await fetch('/api/settings/oauth/' + service + '/start', { method: 'POST' });
+          const data = await res.json();
+          if (data.url) { window.location.href = data.url; }
+          else { el.textContent = 'Error: ' + (data.error || 'No URL returned'); }
+        } catch (e) { el.textContent = 'Error: ' + e.message; }
+      }
+
       async function disconnect(service) {
-        const el = document.getElementById(service + '-status');
+        const el = document.getElementById(service + '-status') || document.getElementById(service + '-config-status');
         try {
           await fetch('/api/settings/disconnect/' + service, { method: 'POST' });
-          el.textContent = 'Disconnected.';
           setTimeout(() => location.reload(), 500);
-        } catch (e) { el.textContent = 'Error: ' + e.message; }
+        } catch (e) { if (el) el.textContent = 'Error: ' + e.message; }
       }
 
       async function triggerSync() {

@@ -93,7 +93,7 @@ export const githubHandlers = [
       state: "open",
       draft: false,
       user: { login: "alice" },
-      head: { ref: "feature-x" },
+      head: { ref: "feature-x", sha: "abc123def456" },
       base: { ref: "main" },
       body: "This adds feature X",
       additions: 150,

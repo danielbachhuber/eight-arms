@@ -36,3 +36,16 @@ export const selectSyncConfigSchema = createSelectSchema(syncConfig);
 
 export type SyncConfig = typeof syncConfig.$inferSelect;
 export type NewSyncConfig = typeof syncConfig.$inferInsert;
+
+export const oauthAppConfig = pgTable("oauth_app_config", {
+  id: serial("id").primaryKey(),
+  service: text("service").notNull().unique(), // 'gmail' | 'github' | 'todoist'
+  clientId: text("client_id").notNull(),
+  clientSecret: text("client_secret").notNull(),
+});
+
+export const insertOauthAppConfigSchema = createInsertSchema(oauthAppConfig);
+export const selectOauthAppConfigSchema = createSelectSchema(oauthAppConfig);
+
+export type OauthAppConfig = typeof oauthAppConfig.$inferSelect;
+export type NewOauthAppConfig = typeof oauthAppConfig.$inferInsert;
