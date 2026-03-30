@@ -54,12 +54,18 @@ async function syncPullRequests(
       pull_number: item.number,
     });
 
-    // Fetch combined status
-    const { data: status } = await octokit.repos.getCombinedStatusForRef({
-      owner,
-      repo: repoName,
-      ref: pr.head.ref,
-    });
+    // Fetch combined status (may fail if branch was deleted)
+    let ciStatus: string | null = null;
+    try {
+      const { data: status } = await octokit.repos.getCombinedStatusForRef({
+        owner,
+        repo: repoName,
+        ref: pr.head.sha,
+      });
+      ciStatus = status.state;
+    } catch {
+      // Branch ref not found — use null
+    }
 
     await db
       .insert(githubPullRequests)
@@ -80,7 +86,7 @@ async function syncPullRequests(
           additions: f.additions,
           deletions: f.deletions,
         })),
-        ciStatus: status.state,
+        ciStatus,
         branch: pr.head.ref,
         body: pr.body || "",
         mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,
@@ -100,7 +106,7 @@ async function syncPullRequests(
             additions: f.additions,
             deletions: f.deletions,
           })),
-          ciStatus: status.state,
+          ciStatus,
           mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,
           mergedBy: pr.merged_by?.login || null,
           syncedAt: new Date(),
