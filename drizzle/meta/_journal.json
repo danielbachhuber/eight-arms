@@ -8,6 +8,13 @@
       "when": 1774889135806,
       "tag": "0000_tiny_warstar",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774889448941,
+      "tag": "0001_tired_mantis",
+      "breakpoints": true
     }
   ]
 }
