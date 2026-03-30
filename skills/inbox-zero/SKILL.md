@@ -8,9 +8,15 @@ user_invocable: true
 
 Process unread inbox emails, most important first. Uses the Eight Arms MCP server for data access.
 
+## IMPORTANT: Use Eight Arms MCP Tools Only
+
+This skill uses the **eight-arms** MCP server (http://localhost:3210/mcp). Use ONLY the eight-arms MCP tools listed below — do NOT use the Gmail MCP plugin, Todoist MCP plugin, or any other MCP server for data access.
+
+**Eight Arms tools to use:** `list_emails`, `get_email`, `archive_email`, `list_pulls`, `get_pull`, `list_issues`, `get_issue`, `list_todoist_tasks`, `get_todoist_task`, `list_work`, `get_work_notes`, `save_work_notes`, `trigger_sync`
+
 ## Prerequisites
 
-The Eight Arms app must be running (`docker compose up`) with Gmail connected and synced. If data seems stale, call the `trigger_sync` tool with `services: ["gmail"]` first.
+The Eight Arms app must be running (`docker compose up` in the eight-arms directory) with Gmail connected and synced. If data seems stale, call the eight-arms `trigger_sync` tool with `services: ["gmail"]` first.
 
 ## Workflow
 
@@ -18,7 +24,7 @@ The Eight Arms app must be running (`docker compose up`) with Gmail connected an
 
 Before processing emails one by one, scan for emails that can be archived without review.
 
-Call `list_emails` with `unread: true` to get all unread inbox emails.
+Call `list_emails` with `unread: true` to get unread inbox emails. The tool returns batches of 20 — use `offset` to paginate if needed. Each result includes `id`, `from`, `subject`, `snippet`, and `date` (use `get_email` for full body).
 
 Identify emails that are clearly resolved and suggest bulk archiving:
 - **Merge notifications** — emails that are solely notifying that a PR was merged (subject contains "merged" and sender is `notifications@github.com`)

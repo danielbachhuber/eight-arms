@@ -11,22 +11,19 @@ export interface ListEmailsParams {
   unread?: boolean;
   hasGithubLink?: boolean;
   limit?: number;
+  offset?: number;
 }
 
 export async function listEmails(db: Database, params: ListEmailsParams = {}) {
-  // Select summary fields only — no body (use getEmail for full detail)
+  // Summary fields + snippet for prioritization (no full body — use getEmail for that)
   let query = db.select({
     id: emails.id,
     threadId: emails.threadId,
     from: emails.from,
-    to: emails.to,
     subject: emails.subject,
     snippet: emails.snippet,
     date: emails.date,
-    labels: emails.labels,
     isRead: emails.isRead,
-    isArchived: emails.isArchived,
-    syncedAt: emails.syncedAt,
   }).from(emails).orderBy(desc(emails.date));
 
   const conditions = [];
@@ -37,6 +34,10 @@ export async function listEmails(db: Database, params: ListEmailsParams = {}) {
 
   if (conditions.length > 0) {
     query = query.where(and(...conditions)) as any;
+  }
+
+  if (params.offset) {
+    query = query.offset(params.offset) as any;
   }
 
   if (params.limit) {

@@ -27,15 +27,16 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "list_emails",
-    "List inbox emails. Returns id, from, subject, date, isRead, labels.",
+    "List inbox emails with snippet for prioritization. Returns batches — use offset/limit to paginate. Call get_email for full body.",
     {
       unread: z.boolean().optional().describe("Filter to unread only"),
       hasGithubLink: z.boolean().optional().describe("Filter to emails linked to GitHub PRs/issues"),
-      limit: z.number().optional().describe("Max results"),
+      limit: z.number().optional().describe("Max results per batch (default 20)"),
+      offset: z.number().optional().describe("Skip first N results (for pagination)"),
     },
-    async ({ unread, hasGithubLink, limit }) => {
-      const results = await listEmails(db, { unread, hasGithubLink, limit });
-      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+    async ({ unread, hasGithubLink, limit, offset }) => {
+      const results = await listEmails(db, { unread, hasGithubLink, limit: limit ?? 20, offset });
+      return { content: [{ type: "text", text: JSON.stringify(results) }] };
     }
   );
 
@@ -46,7 +47,7 @@ export function createMcpServer(): McpServer {
     async ({ id }) => {
       const result = await getEmail(db, id);
       if (!result) return { content: [{ type: "text", text: "Email not found" }] };
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(result) }] };
     }
   );
 
@@ -91,7 +92,7 @@ export function createMcpServer(): McpServer {
     },
     async ({ repo, reviewStatus, limit }) => {
       const results = await listPulls(db, { repo, reviewStatus, limit });
-      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(results) }] };
     }
   );
 
@@ -102,7 +103,7 @@ export function createMcpServer(): McpServer {
     async ({ id }) => {
       const result = await getPull(db, id);
       if (!result) return { content: [{ type: "text", text: "PR not found" }] };
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(result) }] };
     }
   );
 
@@ -116,7 +117,7 @@ export function createMcpServer(): McpServer {
     },
     async ({ repo, state, limit }) => {
       const results = await listIssues(db, { repo, state, limit });
-      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(results) }] };
     }
   );
 
@@ -127,7 +128,7 @@ export function createMcpServer(): McpServer {
     async ({ id }) => {
       const result = await getIssue(db, id);
       if (!result) return { content: [{ type: "text", text: "Issue not found" }] };
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(result) }] };
     }
   );
 
@@ -143,7 +144,7 @@ export function createMcpServer(): McpServer {
     },
     async ({ project, priority, limit }) => {
       const results = await listTodoistTasks(db, { project, priority, limit });
-      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(results) }] };
     }
   );
 
@@ -154,7 +155,7 @@ export function createMcpServer(): McpServer {
     async ({ id }) => {
       const result = await getTodoistTask(db, id);
       if (!result) return { content: [{ type: "text", text: "Task not found" }] };
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(result) }] };
     }
   );
 
@@ -171,7 +172,7 @@ export function createMcpServer(): McpServer {
     },
     async ({ repo, sourceType, groomed, limit }) => {
       const results = await listWork(db, { repo, sourceType, groomed, limit });
-      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(results) }] };
     }
   );
 
@@ -184,7 +185,7 @@ export function createMcpServer(): McpServer {
     },
     async ({ sourceType, sourceId }) => {
       const result = await getWorkNotes(db, sourceType, sourceId);
-      return { content: [{ type: "text", text: result ? JSON.stringify(result, null, 2) : "No notes found" }] };
+      return { content: [{ type: "text", text: result ? JSON.stringify(result) : "No notes found" }] };
     }
   );
 
@@ -212,7 +213,7 @@ export function createMcpServer(): McpServer {
     },
     async ({ services }) => {
       const results = await runSync(db, services as any);
-      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(results) }] };
     }
   );
 
