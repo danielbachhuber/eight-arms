@@ -47,12 +47,18 @@ export async function getProvider(service: ServiceName): Promise<OAuthProvider> 
   const envClientId = process.env[`${service.toUpperCase()}_CLIENT_ID`];
   const envClientSecret = process.env[`${service.toUpperCase()}_CLIENT_SECRET`];
 
+  // Gmail uses installed-app loopback flow (redirect to http://localhost)
+  // Other services use standard web redirect
+  const redirectUri = service === "gmail"
+    ? "http://localhost"
+    : `${baseRedirectUri}/api/settings/oauth/${service}/callback`;
+
   if (envClientId && envClientSecret) {
     return {
       clientId: envClientId,
       clientSecret: envClientSecret,
       ...endpoints,
-      redirectUri: `${baseRedirectUri}/api/settings/oauth/${service}/callback`,
+      redirectUri,
     };
   }
 
@@ -72,7 +78,7 @@ export async function getProvider(service: ServiceName): Promise<OAuthProvider> 
     clientId: config.clientId,
     clientSecret: config.clientSecret,
     ...endpoints,
-    redirectUri: `${baseRedirectUri}/api/settings/oauth/${service}/callback`,
+    redirectUri,
   };
 }
 

@@ -10,13 +10,13 @@ vi.mock("../../src/db/index.js", async () => {
 
 // Mock oauth-providers to avoid needing env vars
 vi.mock("../../src/services/oauth-providers.js", () => ({
-  getProvider: vi.fn().mockReturnValue({
+  getProvider: vi.fn().mockResolvedValue({
     clientId: "test-id",
     clientSecret: "test-secret",
     authUrl: "https://example.com/auth",
     tokenUrl: "https://example.com/token",
     scopes: ["test-scope"],
-    redirectUri: "http://localhost:3000/api/settings/oauth/gmail/callback",
+    redirectUri: "https://example.com/callback",
   }),
   ALL_SERVICES: ["gmail", "github", "todoist"],
 }));

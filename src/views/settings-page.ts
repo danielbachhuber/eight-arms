@@ -119,8 +119,24 @@ export function settingsPage({ services, oauthConfigured = {} }: SettingsPagePro
         try {
           const res = await fetch('/api/settings/oauth/' + service + '/start', { method: 'POST' });
           const data = await res.json();
-          if (data.url) { window.location.href = data.url; }
-          else { el.textContent = 'Error: ' + (data.error || 'No URL returned'); }
+          if (data.url && data.loopback) {
+            // Loopback flow: open auth URL in new tab, poll for completion
+            window.open(data.url, '_blank');
+            el.textContent = 'Waiting for authorization in browser tab...';
+            const poll = setInterval(async () => {
+              const statusRes = await fetch('/api/settings/oauth/' + service + '/status');
+              const statusData = await statusRes.json();
+              if (statusData.status === 'complete') {
+                clearInterval(poll);
+                el.textContent = 'Connected!';
+                setTimeout(() => location.reload(), 500);
+              }
+            }, 1500);
+            // Stop polling after 5 minutes
+            setTimeout(() => clearInterval(poll), 5 * 60 * 1000);
+          } else if (data.url) {
+            window.location.href = data.url;
+          } else { el.textContent = 'Error: ' + (data.error || 'No URL returned'); }
         } catch (e) { el.textContent = 'Error: ' + e.message; }
       }
 

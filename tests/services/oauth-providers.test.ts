@@ -17,7 +17,7 @@ describe("oauth-providers", () => {
     expect(provider.clientId).toBe("gmail-id");
     expect(provider.authUrl).toContain("google");
     expect(provider.scopes).toContain("https://www.googleapis.com/auth/gmail.modify");
-    expect(provider.redirectUri).toBe("http://localhost:3000/api/settings/oauth/gmail/callback");
+    expect(provider.redirectUri).toBe("http://localhost");
   });
 
   it("returns GitHub provider config", async () => {
