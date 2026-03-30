@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "eight-arms": {
+      "command": "docker",
+      "args": ["compose", "exec", "-T", "app", "npx", "tsx", "src/mcp.ts"],
+      "cwd": "/Users/danielb/projects/eight-arms"
+    }
+  }
+}

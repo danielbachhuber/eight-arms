@@ -11,7 +11,8 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "sync": "tsx src/scripts/sync.ts"
+    "sync": "tsx src/scripts/sync.ts",
+    "mcp": "tsx src/mcp.ts"
   },
   "dependencies": {
     "@doist/todoist-api-typescript": "^7.9.0",
