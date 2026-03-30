@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { settings } from "./routes/settings.js";
+import { sync } from "./routes/sync.js";
 
 export const app = new Hono();
 
@@ -9,6 +10,7 @@ app.get("/api/health", (c) => {
 });
 
 app.route("/api/settings", settings);
+app.route("/api/sync", sync);
 
 const port = parseInt(process.env.PORT || "3000", 10);
 
