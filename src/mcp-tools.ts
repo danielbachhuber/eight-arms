@@ -35,7 +35,7 @@ export function createMcpServer(): McpServer {
       offset: z.number().optional().describe("Skip first N results (for pagination)"),
     },
     async ({ unread, hasGithubLink, limit, offset }) => {
-      const results = await listEmails(db, { unread, hasGithubLink, limit: limit ?? 20, offset });
+      const results = await listEmails(db, { unread, hasGithubLink, limit: limit ?? 35, offset });
       return { content: [{ type: "text", text: JSON.stringify(results) }] };
     }
   );
