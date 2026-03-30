@@ -4,55 +4,35 @@ import { createMcpServer } from "./mcp-tools.js";
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
-export function handleMcpRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
+export async function handleMcpRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+  // Existing session
+  if (sessionId && transports.has(sessionId)) {
+    await transports.get(sessionId)!.handleRequest(req, res);
+    return;
+  }
+
+  // New session (must be POST with initialize)
   if (req.method === "POST") {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
-
-    if (sessionId && transports.has(sessionId)) {
-      const transport = transports.get(sessionId)!;
-      transport.handleRequest(req, res);
-      return;
-    }
-
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
     });
 
-    const mcpServer = createMcpServer();
-    mcpServer.connect(transport).then(() => {
-      if (transport.sessionId) {
-        transports.set(transport.sessionId, transport);
-      }
-      transport.handleRequest(req, res);
-    });
+    const server = createMcpServer();
+    await server.connect(transport);
 
-    return;
-  }
+    // The session ID is assigned during handleRequest when it processes initialize
+    await transport.handleRequest(req, res);
 
-  if (req.method === "GET") {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
-    if (sessionId && transports.has(sessionId)) {
-      const transport = transports.get(sessionId)!;
-      transport.handleRequest(req, res);
-      return;
+    // After handling, the transport should have a session ID
+    if (transport.sessionId) {
+      transports.set(transport.sessionId, transport);
     }
-    res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "No session" }));
+
     return;
   }
 
-  if (req.method === "DELETE") {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
-    if (sessionId && transports.has(sessionId)) {
-      const transport = transports.get(sessionId)!;
-      transport.close();
-      transports.delete(sessionId);
-    }
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ ok: true }));
-    return;
-  }
-
-  res.writeHead(405);
-  res.end();
+  res.writeHead(405, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ error: "Method not allowed" }));
 }
