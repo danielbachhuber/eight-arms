@@ -133,11 +133,18 @@ export async function getEmail(db: Database, id: string) {
   return { ...email, github: githubData };
 }
 
-export async function archiveEmail(db: Database, id: string) {
+export async function archiveEmail(db: Database, id: string): Promise<string | null> {
+  // Look up the threadId so we can archive the whole thread
+  const [email] = await db.select({ threadId: emails.threadId }).from(emails).where(eq(emails.id, id));
+  if (!email) return null;
+
+  // Archive all emails in this thread in the DB
   await db
     .update(emails)
     .set({ isArchived: true, labels: sql`"labels" - 'INBOX'` })
-    .where(eq(emails.id, id));
+    .where(eq(emails.threadId, email.threadId));
+
+  return email.threadId;
 }
 
 // --- GitHub ---

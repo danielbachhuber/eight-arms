@@ -31,27 +31,29 @@ emailRoutes.get("/:id", async (c) => {
 emailRoutes.post("/:id/archive", async (c) => {
   const id = c.req.param("id");
 
-  // Archive in DB
-  await archiveEmail(db, id);
+  // Archive whole thread in DB, get threadId back
+  const threadId = await archiveEmail(db, id);
 
-  // Also archive in Gmail if connected
-  try {
-    const cred = await getCredentials(db, "gmail");
-    if (cred) {
-      await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${cred.accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ removeLabelIds: ["INBOX"] }),
-        }
-      );
+  // Also archive the thread in Gmail if connected
+  if (threadId) {
+    try {
+      const cred = await getCredentials(db, "gmail");
+      if (cred) {
+        await fetch(
+          `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}/modify`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${cred.accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ removeLabelIds: ["INBOX"] }),
+          }
+        );
+      }
+    } catch {
+      // Gmail archive failed but DB is updated
     }
-  } catch {
-    // Gmail archive failed but DB is updated — acceptable
   }
 
   return c.json({ ok: true });

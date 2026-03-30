@@ -53,16 +53,21 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     "archive_email",
-    "Archive an email (removes from inbox in DB and Gmail).",
+    "Archive an email thread (removes from inbox in DB and Gmail).",
     { id: z.string().describe("Email ID") },
     async ({ id }) => {
-      await archiveEmail(db, id);
+      const threadId = await archiveEmail(db, id);
+      if (!threadId) {
+        return { content: [{ type: "text", text: "Email not found" }] };
+      }
+
+      // Archive the whole thread in Gmail
       try {
         const { getCredentials } = await import("./services/credentials.js");
         const cred = await getCredentials(db, "gmail");
         if (cred) {
           await fetch(
-            `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`,
+            `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}/modify`,
             {
               method: "POST",
               headers: {
