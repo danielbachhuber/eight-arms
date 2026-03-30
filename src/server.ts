@@ -14,6 +14,97 @@ app.get("/api/health", (c) => {
   return c.json({ status: "ok" });
 });
 
+app.get("/api/openapi.json", (c) => {
+  return c.json({
+    openapi: "3.0.0",
+    info: { title: "Eight Arms API", version: "0.1.0" },
+    paths: {
+      "/api/emails": {
+        get: {
+          summary: "List emails",
+          parameters: [
+            { name: "unread", in: "query", schema: { type: "boolean" } },
+            { name: "hasGithubLink", in: "query", schema: { type: "boolean" } },
+            { name: "limit", in: "query", schema: { type: "integer" } },
+          ],
+        },
+      },
+      "/api/emails/{id}": {
+        get: { summary: "Get email by ID with linked GitHub data" },
+      },
+      "/api/emails/{id}/archive": {
+        post: { summary: "Archive an email" },
+      },
+      "/api/pulls": {
+        get: {
+          summary: "List pull requests",
+          parameters: [
+            { name: "repo", in: "query", schema: { type: "string" } },
+            { name: "reviewStatus", in: "query", schema: { type: "string" } },
+            { name: "limit", in: "query", schema: { type: "integer" } },
+          ],
+        },
+      },
+      "/api/pulls/{id}": {
+        get: { summary: "Get pull request by ID" },
+      },
+      "/api/issues": {
+        get: {
+          summary: "List issues",
+          parameters: [
+            { name: "repo", in: "query", schema: { type: "string" } },
+            { name: "state", in: "query", schema: { type: "string" } },
+            { name: "limit", in: "query", schema: { type: "integer" } },
+          ],
+        },
+      },
+      "/api/issues/{id}": {
+        get: { summary: "Get issue by ID" },
+      },
+      "/api/todoist/tasks": {
+        get: {
+          summary: "List Todoist tasks",
+          parameters: [
+            { name: "project", in: "query", schema: { type: "string" } },
+            { name: "priority", in: "query", schema: { type: "integer" } },
+            { name: "limit", in: "query", schema: { type: "integer" } },
+          ],
+        },
+      },
+      "/api/todoist/tasks/{id}": {
+        get: { summary: "Get Todoist task by ID" },
+      },
+      "/api/work": {
+        get: {
+          summary: "Unified view of all work items",
+          parameters: [
+            { name: "repo", in: "query", schema: { type: "string" } },
+            { name: "sourceType", in: "query", schema: { type: "string" } },
+            { name: "groomed", in: "query", schema: { type: "boolean" } },
+            { name: "limit", in: "query", schema: { type: "integer" } },
+          ],
+        },
+      },
+      "/api/work/notes": {
+        get: {
+          summary: "Get work notes",
+          parameters: [
+            { name: "sourceType", in: "query", schema: { type: "string" }, required: true },
+            { name: "sourceId", in: "query", schema: { type: "string" }, required: true },
+          ],
+        },
+        post: { summary: "Save work notes" },
+      },
+      "/api/sync/trigger": {
+        post: { summary: "Trigger sync" },
+      },
+      "/api/settings": {
+        get: { summary: "Get connection status" },
+      },
+    },
+  });
+});
+
 app.route("/api/settings", settings);
 app.route("/api/sync", sync);
 app.route("/api/emails", emailRoutes);
