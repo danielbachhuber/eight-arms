@@ -295,6 +295,20 @@ All three services use OAuth2, managed through a settings page in the dashboard.
 
 The settings page shows connection status for each service and allows connecting/reconnecting. Credentials are stored encrypted in the database. The encryption key is derived from an `ENCRYPTION_KEY` environment variable set in the Docker Compose config.
 
+## Development Workflow
+
+The app container mounts the local project directory so files are written to the host and can be committed with git from the host machine.
+
+**Development mode:**
+1. `docker compose up` starts the app container and Postgres
+2. The project directory is bind-mounted into the app container (e.g., `/app`)
+3. Run `claude --dangerously-skip-permissions` inside the app container to implement code
+4. Claude inside the container has direct access to Postgres for testing
+5. Files written by Claude appear on the host via the bind mount
+6. Git commits happen from the host machine
+
+The app container needs: Node.js, Claude Code CLI, git, and development dependencies. The Dockerfile should support both a dev mode (with Claude, hot reload) and a production mode (built assets, no dev tools).
+
 ## Tech Stack Summary
 
 - **Runtime:** Node.js
