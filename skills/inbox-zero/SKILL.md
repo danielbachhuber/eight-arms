@@ -1,0 +1,146 @@
+---
+name: inbox-zero
+description: Use when the user invokes /inbox-zero to process their Gmail inbox to zero unread messages
+user_invocable: true
+---
+
+# Inbox Zero
+
+Process unread inbox emails, most important first. Uses the Eight Arms MCP server for data access.
+
+## Prerequisites
+
+The Eight Arms app must be running (`docker compose up`) with Gmail connected and synced. If data seems stale, call the `trigger_sync` tool with `services: ["gmail"]` first.
+
+## Workflow
+
+### Step 1: Bulk Archive
+
+Before processing emails one by one, scan for emails that can be archived without review.
+
+Call `list_emails` with `unread: true` to get all unread inbox emails.
+
+Identify emails that are clearly resolved and suggest bulk archiving:
+- **Merge notifications** — emails that are solely notifying that a PR was merged (subject contains "merged" and sender is `notifications@github.com`)
+- **Closed PR notifications** — PRs that were closed without merging
+- **PRs already reviewed** — GitHub notifications for PRs where the linked PR data shows the user has already submitted a review
+- **Accepted calendar invites** — calendar notifications the user has already responded to
+- **Bot/automated notifications** that are purely informational with no action needed
+
+Present the list:
+> **Bulk archive suggestion:** I found N emails that appear safe to archive:
+> - 5 merge notifications
+> - 2 closed PR notifications
+> - 1 calendar invite (already accepted)
+>
+> Archive all N? (y/n/review)
+
+If "review", show them individually. If "y", call `archive_email` for each. If "n", skip to one-by-one processing.
+
+### Step 2: Prioritize Remaining Emails
+
+From the remaining unread emails, prioritize:
+1. Emails from real people (not automated/bot senders) — actionable and urgent first
+2. GitHub PR notifications where the user is an **explicit requested reviewer** — these block others
+3. Other GitHub notifications (mentions, issue updates)
+4. Automated/marketing emails
+
+For GitHub notification emails, use the linked PR/issue data from `get_email` to understand context (PR state, review status, CI, files changed).
+
+### Step 3: Process One at a Time
+
+Present the highest priority email:
+
+**Format:**
+```
+Thread 1 of N (X unread)
+
+From: [sender]
+Subject: [subject]
+Date: [date]
+
+[Detailed summary using exact quotes from the email. Names, decisions,
+questions asked, code changes mentioned. Let the sender's words do the talking.]
+
+[For PR notifications: repo, PR number, author, state, review status,
+CI status, files changed count, requested reviewers. Link to PR.]
+
+Suggested action: [your recommendation with reasoning]
+
+1. Archive — [specific reason this can be archived]
+2. Reply — [describe what the reply would say]
+3. Task & Archive — [describe the specific Todoist task]
+4. Skip — leave in inbox
+[5. Review — enter PR review mode (for PRs needing review)]
+[6. Merge — merge this PR (for approved PRs)]
+```
+
+**Action guidelines:**
+- Choose 3-5 actions that make sense for this specific email. Do NOT use a fixed set.
+- Tailor action descriptions to the email (e.g., "Reply to Sarah about the deploy timeline" not generic "Reply")
+- Always present as a numbered list so the user can reply with just a number
+
+### Step 4: Execute Action
+
+**Archive:** Call `archive_email` with the email ID.
+
+**Reply:** Draft the reply text and present it for approval. Do NOT send — use `gws gmail users drafts create` to create a draft.
+
+**Task & Archive:** Create a Todoist task via MCP (`td task add` or the Todoist MCP if available), then call `archive_email`.
+
+**Skip:** Move to the next email.
+
+**Merge:** Run `gh pr merge <number> -R <owner/repo>` via shell, then archive the notification.
+
+**Review:** Enter interactive PR review mode (see below).
+
+### Step 5: Repeat
+
+After executing the action, immediately present the next email. Continue until all emails are processed or the user stops.
+
+## Interactive PR Review Mode
+
+When the user chooses to review a PR:
+
+1. **Show files** with change stats as a numbered list:
+   ```
+   PR #42: Add feature X (acme/widget)
+   Files changed:
+   1. src/feature.ts (+100 -20)
+   2. tests/feature.test.ts (+50 -10)
+   ```
+
+2. User picks a file number to view its diff via `gh pr diff <number> -R <owner/repo> -- <path>`
+
+3. After viewing, offer:
+   1. **Comment on line** — specify line and comment, added to pending review
+   2. **Next file** — view the next file
+   3. **Back to files** — return to file list
+   4. **Checkout locally** — `gh pr checkout <number> -R <owner/repo>` for local exploration
+   5. **Submit review** — submit accumulated comments as APPROVE, REQUEST_CHANGES, or COMMENT
+   6. **Done** — exit review mode, return to inbox
+
+**Submit review** uses the GitHub GraphQL API:
+```
+gh api graphql -f query='
+  mutation {
+    addPullRequestReview(input: {
+      pullRequestId: "<nodeId>",
+      event: APPROVE,
+      body: "Review comment",
+      threads: [
+        {path: "<file>", line: <lineNum>, side: RIGHT, body: "Comment text"}
+      ]
+    }) { pullRequestReview { id } }
+  }'
+```
+
+Get the PR node ID first: `gh pr view <number> -R <owner/repo> --json id -q .id`
+
+## Guidelines
+
+- Process **threads**, not individual messages. If multiple emails are in the same thread, summarize the full thread.
+- When drafting a reply, **never send directly**. Always create as a draft.
+- If there are more than 20 unread emails, mention the total count and ask if the user wants to process all or cap at a number.
+- Group related emails (e.g., multiple notifications from the same PR) and present them together.
+- Never include internal reasoning or self-corrections — present clean, confident analysis.

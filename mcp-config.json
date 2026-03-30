@@ -1,9 +1,12 @@
 {
   "mcpServers": {
     "eight-arms": {
-      "command": "docker",
-      "args": ["compose", "exec", "-T", "app", "npx", "tsx", "src/mcp.ts"],
-      "cwd": "/Users/danielb/projects/eight-arms"
+      "command": "npx",
+      "args": ["tsx", "src/mcp.ts"],
+      "cwd": "/Users/danielb/projects/eight-arms",
+      "env": {
+        "DATABASE_URL": "postgres://eight_arms:eight_arms@localhost:5432/eight_arms"
+      }
     }
   }
 }
