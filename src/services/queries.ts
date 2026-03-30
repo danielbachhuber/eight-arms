@@ -46,13 +46,51 @@ export async function listEmails(db: Database, params: ListEmailsParams = {}) {
 
   const results = await query;
 
-  if (params.hasGithubLink) {
-    const links = await db.select().from(emailGithubLinks);
-    const linkedThreadIds = new Set(links.map((l) => l.emailThreadId));
-    return results.filter((e) => linkedThreadIds.has(e.threadId));
+  // Enrich with GitHub PR/issue context in one batch query
+  const threadIds = results.map((e) => e.threadId);
+  const links = threadIds.length > 0
+    ? await db.select().from(emailGithubLinks)
+    : [];
+
+  const linksByThread = new Map<string, typeof links>();
+  for (const link of links) {
+    const existing = linksByThread.get(link.emailThreadId) || [];
+    existing.push(link);
+    linksByThread.set(link.emailThreadId, existing);
   }
 
-  return results;
+  // Fetch all linked PRs and issues in bulk
+  const allPrs = links.some((l) => l.sourceType === "pull_request")
+    ? await db.select({
+        id: githubPullRequests.id,
+        repo: githubPullRequests.repo,
+        number: githubPullRequests.number,
+        state: githubPullRequests.state,
+        reviewDecision: githubPullRequests.reviewDecision,
+        reviewRequests: githubPullRequests.reviewRequests,
+        isDraft: githubPullRequests.isDraft,
+      }).from(githubPullRequests)
+    : [];
+  const prMap = new Map(allPrs.map((pr) => [`${pr.repo}#${pr.number}`, pr]));
+
+  const enriched = results.map((e) => {
+    const emailLinks = linksByThread.get(e.threadId) || [];
+    const github = emailLinks.map((link) => {
+      if (link.sourceType === "pull_request") {
+        const pr = prMap.get(`${link.repo}#${link.number}`);
+        return pr ? { type: "pr", repo: link.repo, number: link.number, state: pr.state, reviewDecision: pr.reviewDecision, isDraft: pr.isDraft } : null;
+      }
+      return { type: "issue", repo: link.repo, number: link.number };
+    }).filter(Boolean);
+
+    return { ...e, github: github.length > 0 ? github : undefined };
+  });
+
+  if (params.hasGithubLink) {
+    return enriched.filter((e) => e.github);
+  }
+
+  return enriched;
 }
 
 export async function getEmail(db: Database, id: string) {

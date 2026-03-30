@@ -26,7 +26,7 @@ Be fast. Don't over-analyze. Fetch one batch of emails, categorize quickly by su
 
 ### Step 1: Bulk Archive (Group by Group)
 
-Scan for auto-archivable emails and present them **one group at a time**. Fetch the first batch with `list_emails` (unread: true). Categorize by simple pattern matching on `from` and `subject` — don't call `get_email` for every message.
+Scan for auto-archivable emails and present them **one group at a time**. Fetch emails with `list_emails` (unread: true). Each email includes `from`, `subject`, `snippet`, and a `github` field with linked PR/issue state (OPEN/MERGED/CLOSED, reviewDecision, isDraft). Use this context to categorize — don't need to call `get_email` for triage.
 
 Call `list_emails` with `unread: true` to get unread inbox emails. The tool returns batches of 20 — use `offset` to paginate through all of them. Each result includes `id`, `from`, `subject`, `snippet`, and `date`.
 
