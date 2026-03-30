@@ -42,16 +42,19 @@ Categorize emails into archivable groups. Then present each group sequentially, 
 7. **CI bot notifications** — build reports, visual diff reports, preview comments
 8. **Automated digests/reminders** — Postmark digests, Todoist reminders, etc.
 
-**For each group, present like this:**
+**For each group, number every email so the user can cherry-pick:**
 
 > **Merge notifications (3 emails)**
-> - PR #3576 — "Fix vertical alignment..." (merged)
-> - PR #3465 — "Update dependencies" (merged)
-> - PR #3559 — "Refactor auth module" (merged)
+> 1. PR #3576 — "Fix vertical alignment..." (merged)
+> 2. PR #3465 — "Update dependencies" (merged)
+> 3. PR #3559 — "Refactor auth module" (merged)
 >
-> Archive these 3? (y/n)
+> Archive all 3, specific numbers, or skip? (all/1,3/n)
 
-Wait for user response. If "y", archive them immediately with `archive_email` for each, then move to the next group. If "n", skip to the next group (these emails stay in inbox for one-by-one processing).
+Wait for user response:
+- **"all" or "y"** — archive all in the group
+- **"1,3"** or **"1-3"** — archive only those numbered items
+- **"n"** — skip the group (emails stay in inbox for one-by-one processing)
 
 After all groups are processed, report how many were archived and how many remain, then move to Step 2.
 
