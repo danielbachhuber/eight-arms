@@ -2,6 +2,10 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { settings } from "./routes/settings.js";
 import { sync } from "./routes/sync.js";
+import { emailRoutes } from "./routes/emails.js";
+import { githubRoutes } from "./routes/github.js";
+import { todoistRoutes } from "./routes/todoist.js";
+import { workRoutes } from "./routes/work.js";
 import { startCron } from "./cron.js";
 
 export const app = new Hono();
@@ -12,6 +16,10 @@ app.get("/api/health", (c) => {
 
 app.route("/api/settings", settings);
 app.route("/api/sync", sync);
+app.route("/api/emails", emailRoutes);
+app.route("/api", githubRoutes);
+app.route("/api/todoist", todoistRoutes);
+app.route("/api/work", workRoutes);
 
 // Page routes
 app.get("/settings", async (c) => {
