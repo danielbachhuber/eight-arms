@@ -1,0 +1,30 @@
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgres://eight_arms:eight_arms@postgres:5432/eight_arms_test
+      ENCRYPTION_KEY: test-encryption-key
+      NODE_ENV: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pnpm test
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: eight_arms
+      POSTGRES_PASSWORD: eight_arms
+      POSTGRES_DB: eight_arms_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eight_arms"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
