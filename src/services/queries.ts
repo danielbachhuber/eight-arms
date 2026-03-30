@@ -14,7 +14,20 @@ export interface ListEmailsParams {
 }
 
 export async function listEmails(db: Database, params: ListEmailsParams = {}) {
-  let query = db.select().from(emails).orderBy(desc(emails.date));
+  // Select summary fields only — no body (use getEmail for full detail)
+  let query = db.select({
+    id: emails.id,
+    threadId: emails.threadId,
+    from: emails.from,
+    to: emails.to,
+    subject: emails.subject,
+    snippet: emails.snippet,
+    date: emails.date,
+    labels: emails.labels,
+    isRead: emails.isRead,
+    isArchived: emails.isArchived,
+    syncedAt: emails.syncedAt,
+  }).from(emails).orderBy(desc(emails.date));
 
   const conditions = [];
   if (params.unread !== undefined) {
