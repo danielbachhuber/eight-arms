@@ -124,36 +124,110 @@ export const githubHandlers = [
 // --- Todoist API mocks ---
 
 export const todoistHandlers = [
-  http.get("https://api.todoist.com/rest/v2/tasks", () => {
-    return HttpResponse.json([
-      {
-        id: "td_api_001",
-        content: "Review Eight Arms PR",
-        description: "Check schema changes",
-        project_id: "proj_001",
-        priority: 4,
-        due: { date: "2026-03-31", datetime: "2026-03-31T17:00:00Z" },
-        labels: ["code-review"],
-        is_completed: false,
-      },
-      {
-        id: "td_api_002",
-        content: "Write documentation",
-        description: "",
-        project_id: "proj_002",
-        priority: 3,
-        due: null,
-        labels: [],
-        is_completed: false,
-      },
-    ]);
+  http.get("https://api.todoist.com/api/v1/tasks", () => {
+    return HttpResponse.json({
+      results: [
+        {
+          id: "td_api_001",
+          user_id: "user_001",
+          content: "Review Eight Arms PR",
+          description: "Check schema changes",
+          project_id: "proj_001",
+          section_id: null,
+          parent_id: null,
+          added_by_uid: null,
+          assigned_by_uid: null,
+          responsible_uid: null,
+          priority: 4,
+          due: { date: "2026-03-31", datetime: "2026-03-31T17:00:00Z", is_recurring: false, string: "Mar 31" },
+          labels: ["code-review"],
+          checked: false,
+          is_deleted: false,
+          is_completed: false,
+          added_at: "2026-03-29T10:00:00Z",
+          completed_at: null,
+          updated_at: "2026-03-29T10:00:00Z",
+          child_order: 1,
+          day_order: 1,
+          is_collapsed: false,
+          deadline: null,
+          duration: null,
+        },
+        {
+          id: "td_api_002",
+          user_id: "user_001",
+          content: "Write documentation",
+          description: "",
+          project_id: "proj_002",
+          section_id: null,
+          parent_id: null,
+          added_by_uid: null,
+          assigned_by_uid: null,
+          responsible_uid: null,
+          priority: 3,
+          due: null,
+          labels: [],
+          checked: false,
+          is_deleted: false,
+          is_completed: false,
+          added_at: "2026-03-29T10:00:00Z",
+          completed_at: null,
+          updated_at: "2026-03-29T10:00:00Z",
+          child_order: 2,
+          day_order: 2,
+          is_collapsed: false,
+          deadline: null,
+          duration: null,
+        },
+      ],
+      next_cursor: null,
+    });
   }),
 
-  http.get("https://api.todoist.com/rest/v2/projects", () => {
-    return HttpResponse.json([
-      { id: "proj_001", name: "Work" },
-      { id: "proj_002", name: "Personal" },
-    ]);
+  http.get("https://api.todoist.com/api/v1/projects", () => {
+    return HttpResponse.json({
+      results: [
+        {
+          id: "proj_001",
+          name: "Work",
+          can_assign_tasks: false,
+          child_order: 1,
+          color: "blue",
+          created_at: "2026-01-01T00:00:00Z",
+          is_archived: false,
+          is_deleted: false,
+          is_favorite: false,
+          is_frozen: false,
+          updated_at: "2026-01-01T00:00:00Z",
+          view_style: "list",
+          default_order: 1,
+          description: "",
+          is_collapsed: false,
+          is_shared: false,
+          parent_id: null,
+        },
+        {
+          id: "proj_002",
+          name: "Personal",
+          can_assign_tasks: false,
+          child_order: 2,
+          color: "green",
+          created_at: "2026-01-01T00:00:00Z",
+          is_archived: false,
+          is_deleted: false,
+          is_favorite: false,
+          is_frozen: false,
+          updated_at: "2026-01-01T00:00:00Z",
+          view_style: "list",
+          default_order: 2,
+          description: "",
+          is_collapsed: false,
+          is_shared: false,
+          parent_id: null,
+        },
+      ],
+      next_cursor: null,
+    });
   }),
 ];
 
