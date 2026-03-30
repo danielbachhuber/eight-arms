@@ -4,20 +4,10 @@ import { createMcpServer } from "./mcp-tools.js";
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
-async function createSession(): Promise<StreamableHTTPServerTransport> {
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
-    enableJsonResponse: true,
-  });
-  const server = createMcpServer();
-  await server.connect(transport);
-  return transport;
-}
-
 export async function handleMcpRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-  // Known session — reuse (fast path)
+  // Known session — fast path
   if (sessionId && transports.has(sessionId)) {
     const start = Date.now();
     await transports.get(sessionId)!.handleRequest(req, res);
@@ -25,15 +15,20 @@ export async function handleMcpRequest(req: http.IncomingMessage, res: http.Serv
     return;
   }
 
-  // New or stale session — create fresh
+  // New or stale session
   if (req.method === "POST") {
     const start = Date.now();
-    const transport = await createSession();
-    console.log(`[mcp] new session created (${Date.now() - start}ms)`);
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID(),
+      enableJsonResponse: true,
+    });
+    const server = createMcpServer();
+    await server.connect(transport);
     await transport.handleRequest(req, res);
     if (transport.sessionId) {
       transports.set(transport.sessionId, transport);
     }
+    console.log(`[mcp] new session (${Date.now() - start}ms)`);
     return;
   }
 
