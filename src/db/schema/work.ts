@@ -5,6 +5,7 @@ import {
   timestamp,
   boolean,
   serial,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
@@ -15,7 +16,9 @@ export const emailGithubLinks = pgTable("email_github_links", {
   sourceId: text("source_id").notNull(),
   repo: text("repo").notNull(),
   number: integer("number").notNull(),
-});
+}, (table) => [
+  uniqueIndex("email_github_links_unique").on(table.emailThreadId, table.sourceType, table.sourceId),
+]);
 
 export const insertEmailGithubLinkSchema = createInsertSchema(emailGithubLinks);
 export const selectEmailGithubLinkSchema = createSelectSchema(emailGithubLinks);

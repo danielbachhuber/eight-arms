@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "email_github_links_unique" ON "email_github_links" USING btree ("email_thread_id","source_type","source_id");
