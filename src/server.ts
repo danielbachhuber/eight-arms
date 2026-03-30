@@ -13,9 +13,33 @@ app.get("/api/health", (c) => {
 app.route("/api/settings", settings);
 app.route("/api/sync", sync);
 
-// Page routes — redirect to the settings route handler in settings.ts
+// Page routes
 app.get("/settings", async (c) => {
   return c.redirect("/api/settings/page");
+});
+
+// Root handler — catches Gmail OAuth callback (Google redirects to http://localhost:PORT?code=...)
+app.get("/", async (c) => {
+  const code = c.req.query("code");
+  if (code) {
+    // This is a Gmail OAuth callback
+    const { getProvider } = await import("./services/oauth-providers.js");
+    const { exchangeCode } = await import("./services/oauth.js");
+    const { saveCredentials } = await import("./services/credentials.js");
+    const { db: database } = await import("./db/index.js");
+
+    try {
+      const provider = await getProvider("gmail");
+      const tokens = await exchangeCode(provider, code);
+      await saveCredentials(database, "gmail", tokens);
+      return c.redirect("/settings?connected=gmail");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return c.html(`<h2>Gmail connection failed</h2><p>${msg}</p><p><a href="/settings">Back to settings</a></p>`);
+    }
+  }
+
+  return c.redirect("/settings");
 });
 
 const port = parseInt(process.env.PORT || "3210", 10);

@@ -47,10 +47,10 @@ export async function getProvider(service: ServiceName): Promise<OAuthProvider> 
   const envClientId = process.env[`${service.toUpperCase()}_CLIENT_ID`];
   const envClientSecret = process.env[`${service.toUpperCase()}_CLIENT_SECRET`];
 
-  // Gmail uses installed-app loopback flow (redirect to http://localhost)
-  // Other services use standard web redirect
+  // Gmail uses installed-app type — redirect to http://localhost:<port> (no path allowed)
+  // Other services use standard web redirect with path
   const redirectUri = service === "gmail"
-    ? "http://localhost"
+    ? `http://localhost:${new URL(baseRedirectUri).port || "3210"}`
     : `${baseRedirectUri}/api/settings/oauth/${service}/callback`;
 
   if (envClientId && envClientSecret) {

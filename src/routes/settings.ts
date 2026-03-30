@@ -15,9 +15,6 @@ settings.get("/", async (c) => {
   return c.json({ services: status });
 });
 
-// Track active loopback flows
-const activeLoopbackFlows = new Map<string, { pending: boolean }>();
-
 settings.post("/oauth/:service/start", async (c) => {
   const service = c.req.param("service") as ServiceName;
   if (!["gmail", "github", "todoist"].includes(service)) {
@@ -25,49 +22,11 @@ settings.post("/oauth/:service/start", async (c) => {
   }
 
   const provider = await getProvider(service);
-
-  // Use loopback flow for installed-app clients (redirect URI is http://localhost)
-  if (provider.redirectUri === "http://localhost" || provider.redirectUri.startsWith("http://localhost/")) {
-    const { startLoopbackFlow } = await import("../services/oauth-loopback.js");
-    const { authUrl, port, tokenPromise } = startLoopbackFlow(provider);
-
-    activeLoopbackFlows.set(service, { pending: true });
-
-    // Handle token in background
-    tokenPromise
-      .then(async (tokens) => {
-        await saveCredentials(db, service, tokens);
-        activeLoopbackFlows.set(service, { pending: false });
-      })
-      .catch(() => {
-        activeLoopbackFlows.delete(service);
-      });
-
-    return c.json({ url: authUrl, loopback: true, port });
-  }
-
-  // Standard redirect flow for web-app clients
   const state = crypto.randomBytes(32).toString("hex");
   oauthStates.set(state, { service, expiresAt: Date.now() + 10 * 60 * 1000 });
+
   const url = buildAuthUrl(provider, state);
   return c.json({ url });
-});
-
-// Poll for loopback flow completion
-settings.get("/oauth/:service/status", async (c) => {
-  const service = c.req.param("service") as ServiceName;
-  const flow = activeLoopbackFlows.get(service);
-
-  if (!flow) {
-    return c.json({ status: "none" });
-  }
-
-  if (flow.pending) {
-    return c.json({ status: "pending" });
-  }
-
-  activeLoopbackFlows.delete(service);
-  return c.json({ status: "complete" });
 });
 
 settings.get("/oauth/:service/callback", async (c) => {
