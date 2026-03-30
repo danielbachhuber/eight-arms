@@ -6,7 +6,7 @@
 
 **Architecture:** A shared OAuth service handles the redirect-based flow for all three providers. Each provider has its own sync service that fetches data via the provider's API and upserts into the corresponding DB tables. Settings API endpoints manage OAuth flows and connection status. A cron job in the container triggers syncs on a configurable interval. External APIs are mocked with `msw` in tests.
 
-**Tech Stack:** googleapis (Gmail), @octokit/rest (GitHub), node-fetch (Todoist API), msw (test mocking), node-cron (in-process scheduler as alternative to system cron)
+**Tech Stack:** googleapis (Gmail), @octokit/rest (GitHub), @doist/todoist-api-typescript (Todoist), msw (test mocking), node-cron (in-process scheduler as alternative to system cron)
 
 ---
 
@@ -52,7 +52,7 @@ eight-arms/
 - [ ] **Step 1: Install production dependencies**
 
 ```bash
-pnpm add googleapis @octokit/rest node-cron
+pnpm add googleapis @octokit/rest @doist/todoist-api-typescript node-cron
 ```
 
 - [ ] **Step 2: Install dev dependencies**
@@ -65,7 +65,7 @@ pnpm add -D msw @types/node-cron
 
 ```bash
 git add package.json pnpm-lock.yaml
-git commit -m "feat: add googleapis, octokit, node-cron, msw dependencies"
+git commit -m "feat: add googleapis, octokit, todoist-api, node-cron, msw dependencies"
 ```
 
 ---
@@ -1413,46 +1413,24 @@ git commit -m "feat: add GitHub sync service for PRs and issues"
 - [ ] **Step 1: Create src/services/sync-todoist.ts**
 
 ```ts
+import { TodoistApi } from "@doist/todoist-api-typescript";
 import type { Database } from "../db/index.js";
 import { todoistTasks } from "../db/schema/todoist.js";
 import { getCredentials } from "./credentials.js";
-
-const TODOIST_API = "https://api.todoist.com/rest/v2";
-
-async function todoistFetch(accessToken: string, path: string) {
-  const res = await fetch(`${TODOIST_API}${path}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Todoist API error (${res.status}): ${await res.text()}`);
-  }
-
-  return res.json();
-}
 
 export async function syncTodoist(db: Database): Promise<{ synced: number }> {
   const cred = await getCredentials(db, "todoist");
   if (!cred) throw new Error("Todoist not connected");
 
+  const api = new TodoistApi(cred.accessToken);
+
   // Fetch projects for name resolution
-  const projects: { id: string; name: string }[] = await todoistFetch(
-    cred.accessToken,
-    "/projects"
-  );
-  const projectMap = new Map(projects.map((p) => [p.id, p.name]));
+  const projectsResponse = await api.getProjects();
+  const projectMap = new Map(projectsResponse.results.map((p) => [p.id, p.name]));
 
   // Fetch active tasks
-  const tasks: {
-    id: string;
-    content: string;
-    description: string;
-    project_id: string;
-    priority: number;
-    due: { date: string; datetime?: string } | null;
-    labels: string[];
-    is_completed: boolean;
-  }[] = await todoistFetch(cred.accessToken, "/tasks");
+  const tasksResponse = await api.getTasks();
+  const tasks = tasksResponse.results;
 
   let synced = 0;
 
@@ -1469,12 +1447,12 @@ export async function syncTodoist(db: Database): Promise<{ synced: number }> {
         id: task.id,
         content: task.content,
         description: task.description || "",
-        projectId: task.project_id,
-        projectName: projectMap.get(task.project_id) || "Unknown",
+        projectId: task.projectId,
+        projectName: projectMap.get(task.projectId) || "Unknown",
         priority: task.priority,
         dueDate,
         labels: task.labels,
-        isCompleted: task.is_completed,
+        isCompleted: task.isCompleted,
         syncedAt: new Date(),
       })
       .onConflictDoUpdate({
@@ -1482,11 +1460,11 @@ export async function syncTodoist(db: Database): Promise<{ synced: number }> {
         set: {
           content: task.content,
           description: task.description || "",
-          projectName: projectMap.get(task.project_id) || "Unknown",
+          projectName: projectMap.get(task.projectId) || "Unknown",
           priority: task.priority,
           dueDate,
           labels: task.labels,
-          isCompleted: task.is_completed,
+          isCompleted: task.isCompleted,
           syncedAt: new Date(),
         },
       });
