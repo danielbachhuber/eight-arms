@@ -52,4 +52,46 @@ settings.get("/oauth/:service/callback", async (c) => {
   return c.redirect("/settings?connected=" + service);
 });
 
+// Save a personal access token directly (for GitHub/Todoist)
+settings.post("/token/:service", async (c) => {
+  const service = c.req.param("service") as ServiceName;
+  if (!["github", "todoist"].includes(service)) {
+    return c.json({ error: "Token auth only supported for github and todoist" }, 400);
+  }
+
+  const body = await c.req.json();
+  const token = body.token as string;
+  if (!token) {
+    return c.json({ error: "Missing token" }, 400);
+  }
+
+  await saveCredentials(db, service, {
+    accessToken: token,
+    refreshToken: "",
+    expiresAt: null,
+    scopes: "",
+  });
+
+  return c.json({ ok: true, service });
+});
+
+// Delete credentials for a service
+settings.post("/disconnect/:service", async (c) => {
+  const service = c.req.param("service") as ServiceName;
+  if (!["gmail", "github", "todoist"].includes(service)) {
+    return c.json({ error: "Invalid service" }, 400);
+  }
+
+  const { deleteCredentials } = await import("../services/credentials.js");
+  await deleteCredentials(db, service);
+  return c.json({ ok: true, service });
+});
+
+// Serve settings page
+settings.get("/page", async (c) => {
+  const status = await getConnectionStatus(db);
+  const { settingsPage } = await import("../views/settings-page.js");
+  return c.html(settingsPage({ services: status }));
+});
+
 export { settings };

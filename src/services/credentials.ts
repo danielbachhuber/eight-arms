@@ -16,8 +16,8 @@ export async function getCredentials(
 
   if (!cred) return null;
 
-  // If token is expired or expiring within 5 minutes, refresh it
-  if (cred.expiresAt && cred.expiresAt.getTime() < Date.now() + 5 * 60 * 1000) {
+  // If token is expired or expiring within 5 minutes, refresh it (skip for PATs with no refresh token)
+  if (cred.refreshToken && cred.expiresAt && cred.expiresAt.getTime() < Date.now() + 5 * 60 * 1000) {
     const provider = getProvider(service);
     const refreshed = await refreshAccessToken(provider, cred.refreshToken);
     await saveCredentials(db, service, refreshed);
