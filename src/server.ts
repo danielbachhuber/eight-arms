@@ -145,6 +145,25 @@ const port = parseInt(process.env.PORT || "3210", 10);
 
 if (process.env.NODE_ENV !== "test") {
   console.log(`Starting server on port ${port}`);
-  serve({ fetch: app.fetch, port });
+
+  // Use raw Node HTTP server to route /mcp to MCP handler, everything else to Hono
+  import("node:http").then(async ({ createServer }) => {
+    const { handleMcpRequest } = await import("./mcp-http.js");
+    const { getRequestListener } = await import("@hono/node-server");
+    const honoListener = getRequestListener(app.fetch);
+
+    const server = createServer((req, res) => {
+      if (req.url?.startsWith("/mcp")) {
+        handleMcpRequest(req, res);
+      } else {
+        honoListener(req, res);
+      }
+    });
+
+    server.listen(port, () => {
+      console.log(`Server listening on port ${port}`);
+    });
+  });
+
   startCron();
 }

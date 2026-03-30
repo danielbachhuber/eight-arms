@@ -50,24 +50,19 @@ All data is available at `http://localhost:3210/api/`:
 
 ## MCP Server
 
-Eight Arms includes an MCP server for Claude integration. Add to your Claude settings:
+Eight Arms includes an MCP server for Claude integration, served over HTTP from the app. Add to your Claude settings:
 
 ```json
 {
   "mcpServers": {
     "eight-arms": {
-      "command": "npx",
-      "args": ["tsx", "src/mcp.ts"],
-      "cwd": "/path/to/eight-arms",
-      "env": {
-        "DATABASE_URL": "postgres://eight_arms:eight_arms@localhost:5432/eight_arms"
-      }
+      "url": "http://localhost:3210/mcp"
     }
   }
 }
 ```
 
-This runs the MCP server on your host machine, connecting directly to the Postgres instance exposed on localhost:5432.
+The MCP server runs inside the Docker container as part of the app. Claude connects to it over HTTP at `localhost:3210/mcp`.
 
 ### Available MCP Tools
 
