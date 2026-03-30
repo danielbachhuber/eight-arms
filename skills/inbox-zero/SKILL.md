@@ -20,28 +20,38 @@ The Eight Arms app must be running (`docker compose up` in the eight-arms direct
 
 ## Workflow
 
-### Step 1: Bulk Archive
+### Step 1: Bulk Archive (Group by Group)
 
-Before processing emails one by one, scan for emails that can be archived without review.
+Before processing emails one by one, scan for auto-archivable emails and present them **one group at a time**.
 
-Call `list_emails` with `unread: true` to get unread inbox emails. The tool returns batches of 20 — use `offset` to paginate if needed. Each result includes `id`, `from`, `subject`, `snippet`, and `date` (use `get_email` for full body).
+Call `list_emails` with `unread: true` to get unread inbox emails. The tool returns batches of 20 — use `offset` to paginate through all of them. Each result includes `id`, `from`, `subject`, `snippet`, and `date`.
 
-Identify emails that are clearly resolved and suggest bulk archiving:
-- **Merge notifications** — emails that are solely notifying that a PR was merged (subject contains "merged" and sender is `notifications@github.com`)
-- **Closed PR notifications** — PRs that were closed without merging
-- **PRs already reviewed** — GitHub notifications for PRs where the linked PR data shows the user has already submitted a review
-- **Accepted calendar invites** — calendar notifications the user has already responded to
-- **Bot/automated notifications** that are purely informational with no action needed
+Categorize emails into archivable groups. Then present each group sequentially, archiving as you go:
 
-Present the list:
-> **Bulk archive suggestion:** I found N emails that appear safe to archive:
-> - 5 merge notifications
-> - 2 closed PR notifications
-> - 1 calendar invite (already accepted)
+**Group order:**
+1. **Merge notifications** — subject contains "merged" and sender is `notifications@github.com`
+2. **Thread replies on merged PRs** — follow-up comments on PRs that are already merged
+3. **Closed PR notifications** — PRs closed without merging
+4. **Closed issue notifications** — issues marked as completed
+5. **Canceled calendar events** — event cancellation notices
+6. **Accepted calendar invites** — invites the user already responded to
+7. **CI bot notifications** — build reports, visual diff reports, preview comments
+8. **Automated digests/reminders** — Postmark digests, Todoist reminders, etc.
+
+**For each group, present like this:**
+
+> **Merge notifications (3 emails)**
+> - PR #3576 — "Fix vertical alignment..." (merged)
+> - PR #3465 — "Update dependencies" (merged)
+> - PR #3559 — "Refactor auth module" (merged)
 >
-> Archive all N? (y/n/review)
+> Archive these 3? (y/n)
 
-If "review", show them individually. If "y", call `archive_email` for each. If "n", skip to one-by-one processing.
+Wait for user response. If "y", archive them immediately with `archive_email` for each, then move to the next group. If "n", skip to the next group (these emails stay in inbox for one-by-one processing).
+
+After all groups are processed, report how many were archived and how many remain, then move to Step 2.
+
+**Do NOT present all groups at once.** One group at a time, archive, move on.
 
 ### Step 2: Prioritize Remaining Emails
 
