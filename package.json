@@ -17,6 +17,7 @@
     "@doist/todoist-api-typescript": "^7.9.0",
     "@hono/node-server": "^1.19.12",
     "@hono/zod-openapi": "^1.2.4",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@octokit/rest": "^22.0.1",
     "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.8.3",
