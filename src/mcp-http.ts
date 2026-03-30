@@ -4,35 +4,41 @@ import { createMcpServer } from "./mcp-tools.js";
 
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
+async function createSession(): Promise<StreamableHTTPServerTransport> {
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => crypto.randomUUID(),
+    enableJsonResponse: true,
+  });
+  const server = createMcpServer();
+  await server.connect(transport);
+  return transport;
+}
+
 export async function handleMcpRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-  // Existing valid session
+  // Known session — reuse (fast path)
   if (sessionId && transports.has(sessionId)) {
+    const start = Date.now();
     await transports.get(sessionId)!.handleRequest(req, res);
+    console.log(`[mcp] reused session ${sessionId.slice(0, 8)}... (${Date.now() - start}ms)`);
     return;
   }
 
-  // Unknown session ID (e.g., after restart) or no session — create fresh session
+  // New or stale session — create fresh
   if (req.method === "POST") {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => crypto.randomUUID(),
-      enableJsonResponse: true,
-    });
-
-    const server = createMcpServer();
-    await server.connect(transport);
+    const start = Date.now();
+    const transport = await createSession();
+    console.log(`[mcp] new session created (${Date.now() - start}ms)`);
     await transport.handleRequest(req, res);
-
     if (transport.sessionId) {
       transports.set(transport.sessionId, transport);
     }
-
     return;
   }
 
   if (req.method === "DELETE") {
-    // Nothing to clean up for unknown sessions
+    if (sessionId) transports.delete(sessionId);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ ok: true }));
     return;

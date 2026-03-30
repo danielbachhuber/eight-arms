@@ -18,11 +18,15 @@ This skill uses the **eight-arms** MCP server (http://localhost:3210/mcp). Use O
 
 The Eight Arms app must be running (`docker compose up` in the eight-arms directory) with Gmail connected and synced. If data seems stale, call the eight-arms `trigger_sync` tool with `services: ["gmail"]` first.
 
+## Speed
+
+Be fast. Don't over-analyze. Fetch one batch of emails, categorize quickly by subject/sender pattern matching, and present the first archivable group immediately. Don't explain your reasoning — just show the group and ask y/n.
+
 ## Workflow
 
 ### Step 1: Bulk Archive (Group by Group)
 
-Before processing emails one by one, scan for auto-archivable emails and present them **one group at a time**.
+Scan for auto-archivable emails and present them **one group at a time**. Fetch the first batch with `list_emails` (unread: true). Categorize by simple pattern matching on `from` and `subject` — don't call `get_email` for every message.
 
 Call `list_emails` with `unread: true` to get unread inbox emails. The tool returns batches of 20 — use `offset` to paginate through all of them. Each result includes `id`, `from`, `subject`, `snippet`, and `date`.
 
