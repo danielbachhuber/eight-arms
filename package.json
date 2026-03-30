@@ -13,17 +13,23 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@doist/todoist-api-typescript": "^7.9.0",
     "@hono/node-server": "^1.19.12",
     "@hono/zod-openapi": "^1.2.4",
+    "@octokit/rest": "^22.0.1",
     "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.8.3",
+    "googleapis": "^171.4.0",
     "hono": "^4.12.9",
+    "node-cron": "^4.2.1",
     "postgres": "^3.4.8",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "@types/node-cron": "^3.0.11",
     "drizzle-kit": "^0.31.10",
+    "msw": "^2.12.14",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.2"
