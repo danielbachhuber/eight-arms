@@ -13,7 +13,7 @@ app.get("/api/health", (c) => {
 app.route("/api/settings", settings);
 app.route("/api/sync", sync);
 
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = parseInt(process.env.PORT || "3210", 10);
 
 if (process.env.NODE_ENV !== "test") {
   console.log(`Starting server on port ${port}`);

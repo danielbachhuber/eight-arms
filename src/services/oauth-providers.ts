@@ -17,9 +17,8 @@ function env(key: string): string {
   return value;
 }
 
-const baseRedirectUri = process.env.OAUTH_REDIRECT_BASE || "http://localhost:3000";
-
 export function getProvider(service: "gmail" | "github" | "todoist"): OAuthProvider {
+  const baseRedirectUri = process.env.OAUTH_REDIRECT_BASE || "http://localhost:3210";
   switch (service) {
     case "gmail":
       return {
