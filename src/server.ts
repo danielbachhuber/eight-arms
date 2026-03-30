@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serve } from "@hono/node-server";
 import { settings } from "./routes/settings.js";
 import { sync } from "./routes/sync.js";
+import { startCron } from "./cron.js";
 
 export const app = new Hono();
 
@@ -17,4 +18,5 @@ const port = parseInt(process.env.PORT || "3000", 10);
 if (process.env.NODE_ENV !== "test") {
   console.log(`Starting server on port ${port}`);
   serve({ fetch: app.fetch, port });
+  startCron();
 }
